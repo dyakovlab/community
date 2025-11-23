@@ -1,38 +1,61 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/Container';
 import { Button } from '@/components/ui/Button';
 import { Post } from '@/types';
 
-async function getPost(id: string): Promise<Post | null> {
-  try {
-    const response = await fetch(`http://localhost:3000/api/posts/${id}`, {
-      cache: 'no-store',
-    });
-    
-    if (!response.ok) {
-      return null;
-    }
-    
-    return response.json();
-  } catch (error) {
-    console.error('Error fetching post:', error);
-    return null;
-  }
-}
+export default function PostDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [post, setPost] = useState<Post | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function PostDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const post = await getPost(id);
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const response = await fetch(`/api/posts/${params.id}`);
+        if (!response.ok) {
+          router.push('/posts');
+          return;
+        }
+        const data = await response.json();
+        setPost(data);
+      } catch (error) {
+        console.error('Error fetching post:', error);
+        router.push('/posts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPost();
+  }, [params.id, router]);
+
+  if (loading) {
+    return (
+      <div className="py-16 md:py-24 bg-white min-h-screen">
+        <Container>
+          <div className="max-w-4xl mx-auto animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-24 mb-8" />
+            <div className="h-12 bg-gray-200 rounded w-3/4 mb-6" />
+            <div className="h-96 bg-gray-200 rounded-2xl mb-8" />
+            <div className="space-y-4">
+              <div className="h-4 bg-gray-200 rounded" />
+              <div className="h-4 bg-gray-200 rounded" />
+              <div className="h-4 bg-gray-200 rounded w-5/6" />
+            </div>
+          </div>
+        </Container>
+      </div>
+    );
+  }
 
   if (!post) {
-    notFound();
+    return null;
   }
 
   return (
@@ -173,4 +196,3 @@ export default async function PostDetailPage({
     </article>
   );
 }
-
